@@ -1,6 +1,6 @@
 ﻿#include "Impes.h"
 
 int main() {
-    Impes impes();
+    Impes impes;
     cout << "Hello World!" << endl;
 }

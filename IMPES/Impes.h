@@ -1,13 +1,15 @@
 #pragma once
 #include <iostream>
 #include <vector>
+#include <string>
 
 using namespace std;
 class Impes {
 protected:
 	int numberOfPointByT, numberOfPointByX, numberOfPointByZ;
-	int stepByT, stepByX, stepByZ;
+	double stepByT, stepByX, stepByZ;
 	double a, b, c, d;
+	double m, muw, muo, Bw, Bo, bw, bo, bc;
 	double (*pressureTEqual0)(double, double);
 	double (*saturationTEqual0)(double, double);
 
@@ -15,23 +17,31 @@ protected:
 	double (*alfa1)(double, double, double), (*alfa2)(double, double, double), (*alfa3)(double, double, double), (*alfa4)(double, double, double), 
 		(*beta1)(double, double, double), (*beta2)(double, double, double), (*beta3)(double, double, double), (*beta4)(double, double, double);
 
-	vector<vector<vector<double>>> saturation, pressure, k0, kw, ko, phasePermeability,	k;
+	vector<vector<vector<double>>> saturation, p, k0, kw, ko, phasePermeability, k;
 
 public:
-	Impes() { //individual options //almost all options have to variation in[0, 1]. For example x, z, sigma pressure and etc //grid will be 1x1x1
+	Impes() { //individual options //almost all options have to variation in[0, 1]. For example x, z, sigma, pressure and etc //grid will be 1x1x1
 		this->numberOfPointByT = 1e+1;
 		this->numberOfPointByX = 1e+1;
 		this->numberOfPointByZ = 1e+1;
 
-		setInitialBoundaryConditions();
+		this->m = 1.;
+		this->muo = 1.;
+		this->muw = 1.;
+
+		this->bw = 1.;
+		this->bc = 1.;
+		this->Bw = bw + bc;
+		this->Bo = bo + bc;
 
 
-		this->stepByT = 1 / (numberOfPointByT - 1);
-		this->stepByX = 1 / (numberOfPointByX - 1);
-		this->stepByZ = 1 / (numberOfPointByZ - 1);
+
+		this->stepByT = 1. / (numberOfPointByT - 1.);
+		this->stepByX = 1. / (numberOfPointByX - 1.);
+		this->stepByZ = 1. / (numberOfPointByZ - 1.);
 
 		this->saturation = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
-		this->pressure = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
+		this->p = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
 		
 		this->k0 = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
 		this->kw = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
@@ -39,7 +49,11 @@ public:
 		this->k = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
 		//this->phasePermeability = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
 	
-		
+		setInitialBoundaryConditions();
+
+
+		cout << sigma("w", 0, 1, 1) << endl;
+
 	
 	}
 
@@ -48,7 +62,78 @@ public:
 	}
 
 	double omega(int n, int i, int j) {
-		//return 1 / m * ()
+		double t = stepByT * n;
+		double x = stepByX * i;
+		double z = stepByZ * j;
+
+		double meanSigmaXIP = (sigmaX("w", n, i, j) + sigmaX("w", n, i + 1, j)) / 2.;
+		double meanSigmaXIN = (sigmaX("w", n, i - 1, j) + sigmaX("w", n, i, j)) / 2.;
+
+		double meanSigmaXJP = (sigmaX("w", n, i, j) + sigmaX("w", n, i, j + 1)) / 2.;
+		double meanSigmaXJN = (sigmaX("w", n, i, j - 1) + sigmaX("w", n, i, j)) / 2.;
+		
+		return 1. / m * (1. / (stepByX * stepByX) * (meanSigmaXIP * p[n][i + 1][j] - (meanSigmaXIP + meanSigmaXIN) * p[n][i][j] + meanSigmaXIN * p[n][i - 1][j]) +
+						 1. / (stepByZ * stepByZ) * (meanSigmaXJP * p[n][i][j + 1] - (meanSigmaXJP + meanSigmaXJN) * p[n][i][j] + meanSigmaXJN * p[n][i][j - 1]) -
+						 N("w", n, i, j) - Bw * saturation[n][i][j] * (p[n][i][j] - p[n - 1][i][j]) / stepByT
+						 );
+	}
+
+	double sigmaX(string phase, int n, int i, int j) {
+		return sigma(phase, n, i, j);
+	}
+
+	double sigmaZ(string phase, int n, int i, int j) {
+		return sigma(phase, n, i, j);
+	}
+
+	double sigma(string phase, int n, int i, int j) {
+		double t = stepByT * n;
+		double x = stepByX * i;
+		double z = stepByZ * j;
+
+		if (phase == "w") {
+			return kw[n][i][j] / muw;
+		} else if (phase == "o") {
+			return ko[n][i][j] / muo;
+		} else {
+			cerr << "PHASE ERROR" << endl;
+			throw "PHASE ERROR";
+		}
+
+	}
+
+	double N(string phase, int n, int i, int j) {
+		double t = stepByT * n;
+		double x = stepByX * i;
+		double z = stepByZ * j;
+
+		if (phase == "w") {
+			return 1.;
+		} else if (phase == "o") {
+			return 1.;
+		} else {
+			cerr << "PHASE ERROR" << endl;
+			throw "PHASE ERROR";
+		}
+
+	}
+
+	void setK(int n) {
+		double cw = 0.1, co = 0.3, ak = 1., bk = 1.;
+
+		for (int i = 0; i < numberOfPointByX; i++) {
+			for (int j = 0; j < numberOfPointByZ; j++) {
+				double x = stepByX * i;
+				double z = stepByZ * j;
+
+				double s = saturation[n][i][j];
+
+				kw[n][i][j] = (s - cw) * (1. - ak * (1. - s));
+				ko[n][i][j] = (1. - s - co) * (1. - bk * s);
+
+				//k[n][i][j] = k0[n][i][j] * фазовая проницаемость(насыщенность) // must be filled
+			}
+		}
 	}
 
 	void setInitialBoundaryConditions() {
@@ -59,10 +144,13 @@ public:
 			return x + z;
 		};
 		
-		for (int x = 0; x < numberOfPointByX; x++) {
-			for (int z = 0; z < numberOfPointByZ; z++) {
-				pressure[0][x][z] = pressureTEqual0(x * stepByX, z * stepByZ);
-				saturation[0][x][z] = saturationTEqual0(x * stepByX, z * stepByZ);
+		for (int i = 0; i < numberOfPointByX; i++) {
+			for (int j = 0; j < numberOfPointByZ; j++) {
+				double x = stepByX * i;
+				double z = stepByZ * j;
+
+				p[0][i][j] = pressureTEqual0(x, z);
+				saturation[0][i][j] = saturationTEqual0(x, z);
 			}
 		}
 		
