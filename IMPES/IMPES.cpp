@@ -1,7 +1,6 @@
-﻿#include <iostream>
-#include "Impes.h"
+﻿#include "Impes.h"
 
-using namespace std;
 int main() {
+    Impes impes();
     cout << "Hello World!" << endl;
 }
