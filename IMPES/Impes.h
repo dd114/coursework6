@@ -15,7 +15,7 @@ protected:
 	double (*alfa1)(double, double, double), (*alfa2)(double, double, double), (*alfa3)(double, double, double), (*alfa4)(double, double, double), 
 		(*beta1)(double, double, double), (*beta2)(double, double, double), (*beta3)(double, double, double), (*beta4)(double, double, double);
 
-	vector<vector<vector<double>>> saturation, pressure, k0, kw, ko, phasePermeability,	permeability;
+	vector<vector<vector<double>>> saturation, pressure, k0, kw, ko, phasePermeability,	k;
 
 public:
 	Impes() { //individual options //almost all options have to variation in[0, 1]. For example x, z, sigma pressure and etc //grid will be 1x1x1
@@ -36,8 +36,8 @@ public:
 		this->k0 = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
 		this->kw = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
 		this->ko = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
-		this->phasePermeability = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
-		this->permeability = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
+		this->k = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
+		//this->phasePermeability = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
 	
 		
 	
@@ -48,7 +48,7 @@ public:
 	}
 
 	double omega(int n, int i, int j) {
-		//return 1 / m * (Kw)
+		//return 1 / m * ()
 	}
 
 	void setInitialBoundaryConditions() {
@@ -58,7 +58,14 @@ public:
 		this->saturationTEqual0 = [](double x, double z) {
 			return x + z;
 		};
-
+		
+		for (int x = 0; x < numberOfPointByX; x++) {
+			for (int z = 0; z < numberOfPointByZ; z++) {
+				pressure[0][x][z] = pressureTEqual0(x * stepByX, z * stepByZ);
+				saturation[0][x][z] = saturationTEqual0(x * stepByX, z * stepByZ);
+			}
+		}
+		
 
 
 		this->fa = [](double t, double z) {
