@@ -36,32 +36,25 @@ public:
 
 
 
-		this->stepByT = 1. / (numberOfPointByT - 1.);
-		this->stepByX = 1. / (numberOfPointByX - 1.);
-		this->stepByZ = 1. / (numberOfPointByZ - 1.);
 
-		this->saturation = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
-		this->p = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
-		
-		this->k0 = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
-		this->kw = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
-		this->ko = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
-		this->k = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
-		//this->phasePermeability = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
 	
 		setInitialBoundaryConditions();
-
-
-		cout << sigma("w", 0, 1, 1) << endl;
-
 	
 	}
 
-	void Calculate(double t) {
-		//double omega = 
+	void Calculate() {
+		for (int n = 1; n < numberOfPointByT - 1; n++) { //is defined without boundaries!!!
+			for (int i = 1; i < numberOfPointByX - 1; i++) {
+				for (int j = 1; j < numberOfPointByZ - 1; j++) {
+					saturation[n + 1][i][j] = saturation[n][i][j] + omega(n, i, j) * stepByT;
+				}
+			}
+		}
+
+		printArray(saturation);
 	}
 
-	double omega(int n, int i, int j) {
+	double omega(int n, int i, int j) { 
 		double t = stepByT * n;
 		double x = stepByX * i;
 		double z = stepByZ * j;
@@ -74,7 +67,7 @@ public:
 		
 		return 1. / m * (1. / (stepByX * stepByX) * (meanSigmaXIP * p[n][i + 1][j] - (meanSigmaXIP + meanSigmaXIN) * p[n][i][j] + meanSigmaXIN * p[n][i - 1][j]) +
 						 1. / (stepByZ * stepByZ) * (meanSigmaXJP * p[n][i][j + 1] - (meanSigmaXJP + meanSigmaXJN) * p[n][i][j] + meanSigmaXJN * p[n][i][j - 1]) -
-						 N("w", n, i, j) - Bw * saturation[n][i][j] * (p[n][i][j] - p[n - 1][i][j]) / stepByT
+						 N("w", n - 1, i, j) - Bw * saturation[n - 1][i][j] * (p[n][i][j] - p[n - 1][i][j]) / stepByT
 						 );
 	}
 
@@ -137,6 +130,21 @@ public:
 	}
 
 	void setInitialBoundaryConditions() {
+		this->stepByT = 1. / (numberOfPointByT - 1.);
+		this->stepByX = 1. / (numberOfPointByX - 1.);
+		this->stepByZ = 1. / (numberOfPointByZ - 1.);
+
+		this->saturation = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
+		this->p = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
+
+		this->k0 = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
+		this->kw = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
+		this->ko = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
+		this->k = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
+		//this->phasePermeability = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
+
+
+
 		this->pressureTEqual0 = [](double x, double z) {
 			return x + z;
 		};
