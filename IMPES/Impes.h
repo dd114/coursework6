@@ -6,8 +6,11 @@ using namespace std;
 class Impes {
 protected:
 	int numberOfPointByT, numberOfPointByX, numberOfPointByZ;
+	double a, b, c, d;
 	double (*pressureTEqual0)(double, double);
 	double (*saturationTEqual0)(double, double);
+
+	double (*fa)(double, double), (*fb)(double, double), (*fc)(double, double), (*fd)(double, double);
 	double (*alfa1)(double, double, double), (*alfa2)(double, double, double), (*alfa3)(double, double, double), (*alfa4)(double, double, double), 
 		(*beta1)(double, double, double), (*beta2)(double, double, double), (*beta3)(double, double, double), (*beta4)(double, double, double);
 
@@ -18,6 +21,19 @@ public:
 		this->numberOfPointByT = 1e+1;
 		this->numberOfPointByX = 1e+1;
 		this->numberOfPointByZ = 1e+1;
+
+		this->fa = [](double t, double z) {
+			return 1.;
+		};
+		this->fb = [](double t, double z) {
+			return 1.;
+		};
+		this->fc = [](double t, double x) {
+			return 1.;
+		};
+		this->fd = [](double t, double x) {
+			return 1.;
+		};
 
 		this->alfa1 = [](double t, double x, double z) {
 			return 1.;
