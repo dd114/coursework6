@@ -22,9 +22,9 @@ protected:
 
 public:
 	Impes() { //individual options //almost all options have to variation in [0, 1]. For example x, z, sigma, pressure and etc //grid will be 1x1x1
-		this->numberOfPointByT = 1e+1;
-		this->numberOfPointByX = 10;
-		this->numberOfPointByZ = 10;
+		this->numberOfPointByT = 1e+2;
+		this->numberOfPointByX = 5;
+		this->numberOfPointByZ = 5;
 
 		this->m = .24;
 		this->muo = 40.;
