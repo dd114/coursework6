@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <cassert>
 
 using namespace std;
 class Impes {
@@ -43,7 +44,7 @@ public:
 	}
 
 	void Calculate() {
-		for (int n = 1; n < numberOfPointByT - 1; n++) { //is defined without boundaries!!!
+		for (int n = 0; n < numberOfPointByT - 1; n++) { //is defined without boundaries!!!
 			for (int i = 1; i < numberOfPointByX - 1; i++) {
 				for (int j = 1; j < numberOfPointByZ - 1; j++) {
 					saturation[n + 1][i][j] = saturation[n][i][j] + omega(n, i, j) * stepByT;
@@ -65,9 +66,9 @@ public:
 		double meanSigmaXJP = (sigmaX("w", n, i, j) + sigmaX("w", n, i, j + 1)) / 2.;
 		double meanSigmaXJN = (sigmaX("w", n, i, j - 1) + sigmaX("w", n, i, j)) / 2.;
 		
-		return 1. / m * (1. / (stepByX * stepByX) * (meanSigmaXIP * p[n][i + 1][j] - (meanSigmaXIP + meanSigmaXIN) * p[n][i][j] + meanSigmaXIN * p[n][i - 1][j]) +
-						 1. / (stepByZ * stepByZ) * (meanSigmaXJP * p[n][i][j + 1] - (meanSigmaXJP + meanSigmaXJN) * p[n][i][j] + meanSigmaXJN * p[n][i][j - 1]) -
-						 N("w", n - 1, i, j) - Bw * saturation[n - 1][i][j] * (p[n][i][j] - p[n - 1][i][j]) / stepByT
+		return 1. / m * (1. / (stepByX * stepByX) * (meanSigmaXIP * p[n + 1][i + 1][j] - (meanSigmaXIP + meanSigmaXIN) * p[n + 1][i][j] + meanSigmaXIN * p[n + 1][i - 1][j]) +
+						 1. / (stepByZ * stepByZ) * (meanSigmaXJP * p[n + 1][i][j + 1] - (meanSigmaXJP + meanSigmaXJN) * p[n + 1][i][j] + meanSigmaXJN * p[n + 1][i][j - 1]) -
+						 N("w", n, i, j) - Bw * saturation[n][i][j] * (p[n + 1][i][j] - p[n][i][j]) / stepByT
 						 );
 	}
 
@@ -127,6 +128,32 @@ public:
 				//k[n][i][j] = k0[n][i][j] * фазовая проницаемость(насыщенность) // must be filled
 			}
 		}
+	}
+
+	vector<double> tridiagonalSolution(const vector<vector<double>>& matrix1, const vector<double>& matrix2) {
+		assert(matrix1.size() == matrix2.size() && "Sizes match");
+
+		double y;
+		int N = matrix2.size();
+		int N1 = N - 1;
+		vector<double> a(N), B(N), matRes(N);
+
+		y = matrix1[0][0];
+		a[0] = -matrix1[0][1] / y;
+		B[0] = matrix2[0] / y;
+		for (int i = 1; i < N1; i++) {
+			y = matrix1[i][i] + matrix1[i][i - 1] * a[i - 1];
+			a[i] = -matrix1[i][i + 1] / y;
+			B[i] = (matrix2[i] - matrix1[i][i - 1] * B[i - 1]) / y;
+		}
+
+		matRes[N1] = (matrix2[N1] - matrix1[N1][N1 - 1] * B[N1 - 1]) / (matrix1[N1][N1] + matrix1[N1][N1 - 1] * a[N1 - 1]);
+		for (int i = N1 - 1; i >= 0; i--) {
+			matRes[i] = a[i] * matRes[i + 1] + B[i];
+		}
+
+		return matRes;
+
 	}
 
 	void setInitialBoundaryConditions() {
