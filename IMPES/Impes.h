@@ -23,8 +23,8 @@ protected:
 public:
 	Impes() { //individual options //almost all options have to variation in [0, 1]. For example x, z, sigma, pressure and etc //grid will be 1x1x1
 		this->numberOfPointByT = 1e+1;
-		this->numberOfPointByX = 1e+1;
-		this->numberOfPointByZ = 1e+1;
+		this->numberOfPointByX = 5;
+		this->numberOfPointByZ = 5;
 
 		this->m = 1.;
 		this->muo = 1.;
@@ -119,7 +119,7 @@ public:
 
 			printArray(matrix1);
 
-			vector<double> pAnswer = SeidelMethod(matrix1, matrix2, 0.1);
+			vector<double> pAnswer = SeidelMethod(matrix1, matrix2, 0.01);
 
 			for (int i = 1; i < numberOfPointByX - 1; i++) {
 				for (int j = 1; j < numberOfPointByZ - 1; j++) {
@@ -127,7 +127,7 @@ public:
 					//int currentPositionZ = (j - 1);
 					//int currentPosition = currentPositionX + currentPositionZ;
 
-					p[n][i][j] = pAnswer[(i - 1) * numberOfVariablesOnX + (j - 1)];
+					p[n + 1][i][j] = pAnswer[(i - 1) * numberOfVariablesOnX + (j - 1)];
 				}
 			}
 
@@ -406,18 +406,6 @@ public:
 		// векторов вещественных чисел
 		vector <vector<double>> matrix = matrix1;
 
-		//// Матрица будет иметь размер (size) x (size + 1),
-		//// c учетом столбца свободных членов    
-		//matrix.resize(size);
-		//for (int i = 0; i < size; i++) {
-		//	matrix[i].resize(size + 1);
-
-		//	for (int j = 0; j < size + 1; j++) {
-		//		cin >> matrix[i][j];
-		//	}
-		//}
-
-
 		// Введем вектор значений неизвестных на предыдущей итерации,
 		// размер которого равен числу строк в матрице, т.е. size,
 		// причем согласно методу изначально заполняем его нулями
@@ -471,11 +459,6 @@ public:
 			// становятся значениями на предыдущей итерации
 			previousVariableValues = currentVariableValues;
 		}
-
-		//// Выводим найденные значения неизвестных с 8 знаками точности
-		//for (int i = 0; i < size; i++) {
-		//	printf("%.8llf ", previousVariableValues[i]);
-		//}
 
 		return previousVariableValues;
 	}
