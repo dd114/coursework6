@@ -26,13 +26,13 @@ public:
 		this->numberOfPointByX = 5;
 		this->numberOfPointByZ = 5;
 
-		this->m = 1.;
+		this->m = .24;
 		this->muo = 1.;
 		this->muw = 1.;
 
-		this->bw = 1.;
-		this->bo = 1.;
-		this->bc = 1.;
+		this->bw = 3.7e-10;
+		this->bo = 7.4e-9;
+		this->bc = 4.5e-10;
 		this->Bw = bw + bc;
 		this->Bo = bo + bc;
 
@@ -307,7 +307,7 @@ public:
 		this->saturationW = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
 		this->p = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
 
-		this->k0 = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ, 1)));
+		this->k0 = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ, 1e-6)));
 		this->kw = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
 		this->ko = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
 		this->k = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
