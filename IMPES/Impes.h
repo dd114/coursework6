@@ -18,7 +18,7 @@ protected:
 	double (*alfa1)(double, double, double), (*alfa2)(double, double, double), (*alfa3)(double, double, double), (*alfa4)(double, double, double), 
 		(*beta1)(double, double, double), (*beta2)(double, double, double), (*beta3)(double, double, double), (*beta4)(double, double, double);
 
-	vector<vector<vector<double>>> saturation, p, k0, kw, ko, phasePermeability, k;
+	vector<vector<vector<double>>> saturationW, p, k0, kw, ko, phasePermeability, k;
 
 public:
 	Impes() { //individual options //almost all options have to variation in [0, 1]. For example x, z, sigma, pressure and etc //grid will be 1x1x1
@@ -31,6 +31,7 @@ public:
 		this->muw = 1.;
 
 		this->bw = 1.;
+		this->bo = 1.;
 		this->bc = 1.;
 		this->Bw = bw + bc;
 		this->Bo = bo + bc;
@@ -52,13 +53,13 @@ public:
 		for (int n = 0; n < numberOfPointByT - 1; n++) { //is defined without boundaries!!!
 			for (int i = 1; i < numberOfPointByX - 1; i++) {
 				for (int j = 1; j < numberOfPointByZ - 1; j++) {
-					saturation[n + 1][i][j] = saturation[n][i][j] + omega(n, i, j) * stepByT;
+					saturationW[n + 1][i][j] = saturationW[n][i][j] + omega(n, i, j) * stepByT;
 				}
 			}
 			setKwAndKo(n + 1);
 		}
 
-		//printArray(saturation);
+		//printArray(saturationW);
 		printArray(p);
 	}
 
@@ -67,22 +68,22 @@ public:
 		double x = stepByX * i;
 		double z = stepByZ * j;
 
-		double meanSigmaXIP = (sigmaX("w", n, i, j) + sigmaX("w", n, i + 1, j)) / 2.;
-		double meanSigmaXIN = (sigmaX("w", n, i - 1, j) + sigmaX("w", n, i, j)) / 2.;
+		double meanSigmaXIP = (sigmaX(n, i, j, "w") + sigmaX(n, i + 1, j, "w")) / 2.;
+		double meanSigmaXIN = (sigmaX(n, i - 1, j, "w") + sigmaX(n, i, j, "w")) / 2.;
 
-		double meanSigmaXJP = (sigmaX("w", n, i, j) + sigmaX("w", n, i, j + 1)) / 2.;
-		double meanSigmaXJN = (sigmaX("w", n, i, j - 1) + sigmaX("w", n, i, j)) / 2.;
+		double meanSigmaXJP = (sigmaX(n, i, j, "w") + sigmaX(n, i, j + 1, "w")) / 2.;
+		double meanSigmaXJN = (sigmaX(n, i, j - 1, "w") + sigmaX(n, i, j, "w")) / 2.;
 
 		double answer = 1. / m * (
 			1. / (stepByX * stepByX) * (meanSigmaXIP * p[n + 1][i + 1][j] - (meanSigmaXIP + meanSigmaXIN) * p[n + 1][i][j] + meanSigmaXIN * p[n + 1][i - 1][j]) +
 			1. / (stepByZ * stepByZ) * (meanSigmaXJP * p[n + 1][i][j + 1] - (meanSigmaXJP + meanSigmaXJN) * p[n + 1][i][j] + meanSigmaXJN * p[n + 1][i][j - 1]) -
-			N("w", n, i, j) - Bw * saturation[n][i][j] * (p[n + 1][i][j] - p[n][i][j]) / stepByT
+			N(n, i, j, "w") - B(n, i, j, "w") * saturationW[n][i][j] * (p[n + 1][i][j] - p[n][i][j]) / stepByT
 			);
 
 		return answer;
 	}
 
-	double sigmaX(string phase, int n, int i, int j) {
+	double sigmaX(int n, int i, int j, string phase = "general") {
 		double t = stepByT * n;
 		double x = stepByX * i;
 		double z = stepByZ * j;
@@ -109,17 +110,18 @@ public:
 		} else if (phase == "o") {
 			return k0[n][I][J] * ko[n][I][J] / muo;
 		} else {
-			cerr << "PHASE ERROR" << endl;
-			throw "PHASE ERROR";
+			return k0[n][I][J] * kw[n][I][J] / muw + k0[n][I][J] * ko[n][I][J] / muo;
+			//cerr << "PHASE ERROR" << endl;
+			//throw "PHASE ERROR";
 		}
 
 	}
 
-	double sigmaZ(string phase, int n, int i, int j) {
-		return sigmaX(phase, n, i, j) / 10.;
+	double sigmaZ(int n, int i, int j, string phase = "general") {
+		return sigmaX(n, i, j, phase) / 10.;
 	}
 
-	double N(string phase, int n, int i, int j) {
+	double N(int n, int i, int j, string phase = "general") {
 		double t = stepByT * n;
 		double x = stepByX * i;
 		double z = stepByZ * j;
@@ -128,9 +130,26 @@ public:
 			return 1.;
 		} else if (phase == "o") {
 			return 1.;
-		} else {
+		} else if (phase == "general") {
 			cerr << "PHASE ERROR" << endl;
 			throw "PHASE ERROR";
+		}
+
+	}
+
+	double B(int n, int i, int j, string phase = "general") {
+		double t = stepByT * n;
+		double x = stepByX * i;
+		double z = stepByZ * j;
+
+		if (phase == "w") {
+			return Bw;
+		} else if (phase == "o") {
+			return Bo;
+		} else if (phase == "general") {
+			return Bw * saturationW[n][i][j] + Bo * (1 - saturationW[n][i][j]);
+			//cerr << "PHASE ERROR" << endl;
+			//throw "PHASE ERROR";
 		}
 
 	}
@@ -143,7 +162,7 @@ public:
 				double x = stepByX * i;
 				double z = stepByZ * j;
 
-				double s = saturation[n][i][j];
+				double s = saturationW[n][i][j];
 
 				kw[n][i][j] = (s - cw) * (1. - ak * (1. - s));
 				ko[n][i][j] = (1. - s - co) * (1. - bk * s);
@@ -159,7 +178,7 @@ public:
 		this->stepByX = 1. / (numberOfPointByX - 1.);
 		this->stepByZ = 1. / (numberOfPointByZ - 1.);
 
-		this->saturation = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
+		this->saturationW = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
 		this->p = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
 
 		this->k0 = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ, 1)));
@@ -184,7 +203,7 @@ public:
 				double z = stepByZ * j;
 
 				p[0][i][j] = pressureTEqual0(x, z);
-				saturation[0][i][j] = saturationTEqual0(x, z);
+				saturationW[0][i][j] = saturationTEqual0(x, z);
 			}
 		}
 
