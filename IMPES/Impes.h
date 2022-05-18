@@ -44,14 +44,46 @@ public:
 	}
 
 	void Calculate() {
-
-
-
-
-
-
+		
 		for (int n = 0; n < numberOfPointByT - 1; n++) { //is defined without boundaries!!!
-			for (int i = 1; i < numberOfPointByX - 1; i++) {
+
+
+			for (int i = 1; i < numberOfPointByX - 1; i++) { //pressure
+				for (int j = 1; j < numberOfPointByZ - 1; j++) {
+					double meanSigmaXIP = (sigmaX(n, i, j) + sigmaX(n, i + 1, j)) / 2.;
+					double meanSigmaXIN = (sigmaX(n, i - 1, j) + sigmaX(n, i, j)) / 2.;
+
+					double meanSigmaXJP = (sigmaX(n, i, j) + sigmaX(n, i, j + 1)) / 2.;
+					double meanSigmaXJN = (sigmaX(n, i, j - 1) + sigmaX(n, i, j)) / 2.;
+
+
+					double meanSigmaZIP = (sigmaZ(n, i, j) + sigmaZ(n, i + 1, j)) / 2.;
+					double meanSigmaZIN = (sigmaZ(n, i - 1, j) + sigmaZ(n, i, j)) / 2.;
+
+					double meanSigmaZJP = (sigmaZ(n, i, j) + sigmaZ(n, i, j + 1)) / 2.;
+					double meanSigmaZJN = (sigmaZ(n, i, j - 1) + sigmaZ(n, i, j)) / 2.;
+
+
+					double ak = D(n, i - 1, j) * stepByT / (stepByX * stepByX) * meanSigmaXIN;
+					double bk = D(n, i, j - 1) * stepByT / (stepByZ * stepByZ) * meanSigmaZJN;
+
+					double ck = D(n, i, j) * stepByT / (stepByX * stepByX) * (meanSigmaXIP + meanSigmaXIN) + 
+								D(n, i, j) * stepByT / (stepByZ * stepByZ) * (meanSigmaZJP + meanSigmaZJN) + 1;
+
+					double dk = D(n, i, j + 1) * stepByT / (stepByZ * stepByZ) * meanSigmaZJP;
+					double ek = D(n, i + 1, j) * stepByT / (stepByX * stepByX) * meanSigmaXIP;
+
+					double h = N(n, i, j) * D(n, i, j) * stepByT - p[n][i][j];
+
+
+
+
+
+				}
+			}
+
+
+			for (int i = 1; i < numberOfPointByX - 1; i++) { //saturation
 				for (int j = 1; j < numberOfPointByZ - 1; j++) {
 					saturationW[n + 1][i][j] = saturationW[n][i][j] + omega(n, i, j) * stepByT;
 				}
@@ -74,9 +106,16 @@ public:
 		double meanSigmaXJP = (sigmaX(n, i, j, "w") + sigmaX(n, i, j + 1, "w")) / 2.;
 		double meanSigmaXJN = (sigmaX(n, i, j - 1, "w") + sigmaX(n, i, j, "w")) / 2.;
 
+	   
+		double meanSigmaZIP = (sigmaZ(n, i, j, "w") + sigmaZ(n, i + 1, j, "w")) / 2.;
+		double meanSigmaZIN = (sigmaZ(n, i - 1, j, "w") + sigmaZ(n, i, j, "w")) / 2.;
+
+		double meanSigmaZJP = (sigmaZ(n, i, j, "w") + sigmaZ(n, i, j + 1, "w")) / 2.;
+		double meanSigmaZJN = (sigmaZ(n, i, j - 1, "w") + sigmaZ(n, i, j, "w")) / 2.;
+
 		double answer = 1. / m * (
 			1. / (stepByX * stepByX) * (meanSigmaXIP * p[n + 1][i + 1][j] - (meanSigmaXIP + meanSigmaXIN) * p[n + 1][i][j] + meanSigmaXIN * p[n + 1][i - 1][j]) +
-			1. / (stepByZ * stepByZ) * (meanSigmaXJP * p[n + 1][i][j + 1] - (meanSigmaXJP + meanSigmaXJN) * p[n + 1][i][j] + meanSigmaXJN * p[n + 1][i][j - 1]) -
+			1. / (stepByZ * stepByZ) * (meanSigmaZJP * p[n + 1][i][j + 1] - (meanSigmaZJP + meanSigmaZJN) * p[n + 1][i][j] + meanSigmaZJN * p[n + 1][i][j - 1]) -
 			N(n, i, j, "w") - B(n, i, j, "w") * saturationW[n][i][j] * (p[n + 1][i][j] - p[n][i][j]) / stepByT
 			);
 
@@ -109,10 +148,11 @@ public:
 			return k0[n][I][J] * kw[n][I][J] / muw;
 		} else if (phase == "o") {
 			return k0[n][I][J] * ko[n][I][J] / muo;
-		} else {
+		} else if (phase == "general") {
 			return k0[n][I][J] * kw[n][I][J] / muw + k0[n][I][J] * ko[n][I][J] / muo;
-			//cerr << "PHASE ERROR" << endl;
-			//throw "PHASE ERROR";
+		} else {
+			cerr << "PHASE ERROR" << endl;
+			throw "PHASE ERROR";
 		}
 
 	}
@@ -131,6 +171,8 @@ public:
 		} else if (phase == "o") {
 			return 1.;
 		} else if (phase == "general") {
+			return 1. + 1.;
+		} else {
 			cerr << "PHASE ERROR" << endl;
 			throw "PHASE ERROR";
 		}
@@ -142,14 +184,47 @@ public:
 		double x = stepByX * i;
 		double z = stepByZ * j;
 
+		int numberPreLastPointInArrayX = numberOfPointByX - 1 - 1;
+		int numberPreLastPointInArrayZ = numberOfPointByZ - 1 - 1;
+
+		int I = i, J = j;
+
+		if (I > numberPreLastPointInArrayX) {
+			I = numberPreLastPointInArrayX;
+		} else if (I == 0) {
+			I = 1;
+		}
+
+		if (J > numberPreLastPointInArrayZ) {
+			J = numberPreLastPointInArrayZ;
+		} else if (J == 0) {
+			J = 1;
+		}
+
+
 		if (phase == "w") {
 			return Bw;
 		} else if (phase == "o") {
 			return Bo;
 		} else if (phase == "general") {
-			return Bw * saturationW[n][i][j] + Bo * (1 - saturationW[n][i][j]);
-			//cerr << "PHASE ERROR" << endl;
-			//throw "PHASE ERROR";
+			return Bw * saturationW[n][I][J] + Bo * (1 - saturationW[n][I][J]);
+		} else {
+			cerr << "PHASE ERROR" << endl;
+			throw "PHASE ERROR";
+		}
+
+	}
+
+	double D(int n, int i, int j, string phase = "general") {
+		double t = stepByT * n;
+		double x = stepByX * i;
+		double z = stepByZ * j;
+
+		if (phase == "general") {
+			return 1. / (m * B(n, i, j));
+		} else {
+			cerr << "PHASE ERROR" << endl;
+			throw "PHASE ERROR";
 		}
 
 	}
@@ -193,7 +268,7 @@ public:
 			return x + z;
 		};
 		this->saturationTEqual0 = [](double x, double z) {
-			return x + z;
+			return (x + z) / 3;
 		};
 		
 
