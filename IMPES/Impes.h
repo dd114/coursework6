@@ -47,8 +47,14 @@ public:
 		
 		for (int n = 0; n < numberOfPointByT - 1; n++) { //is defined without boundaries!!!
 
+			//pressure
+			int numberOfVariablesOnX = (numberOfPointByZ - 2);
+			int numberOfVariablesOnZ = (numberOfPointByX - 2);
+			int numberOfVariables = numberOfVariablesOnX  * numberOfVariablesOnZ;
+			vector<vector<double>> matrix1(numberOfVariables, vector<double>(numberOfVariables, 1));
+			vector<double> matrix2(numberOfVariables, 0);
 
-			for (int i = 1; i < numberOfPointByX - 1; i++) { //pressure
+			for (int i = 1; i < numberOfPointByX - 1; i++) { 
 				for (int j = 1; j < numberOfPointByZ - 1; j++) {
 					double meanSigmaXIP = (sigmaX(n, i, j) + sigmaX(n, i + 1, j)) / 2.;
 					double meanSigmaXIN = (sigmaX(n, i - 1, j) + sigmaX(n, i, j)) / 2.;
@@ -63,7 +69,7 @@ public:
 					double meanSigmaZJP = (sigmaZ(n, i, j) + sigmaZ(n, i, j + 1)) / 2.;
 					double meanSigmaZJN = (sigmaZ(n, i, j - 1) + sigmaZ(n, i, j)) / 2.;
 
-
+					vector<double> checkPoint(5, 0);
 					double ak = D(n, i - 1, j) * stepByT / (stepByX * stepByX) * meanSigmaXIN;
 					double bk = D(n, i, j - 1) * stepByT / (stepByZ * stepByZ) * meanSigmaZJN;
 
@@ -73,17 +79,62 @@ public:
 					double dk = D(n, i, j + 1) * stepByT / (stepByZ * stepByZ) * meanSigmaZJP;
 					double ek = D(n, i + 1, j) * stepByT / (stepByX * stepByX) * meanSigmaXIP;
 
-					double h = N(n, i, j) * D(n, i, j) * stepByT - p[n][i][j];
+					double hk = N(n, i, j) * D(n, i, j) * stepByT - p[n][i][j];
+
+					if (j == 1) {
+						checkPoint[1] = 0;
+						hk -= bk * p[n][i][j - 1];
+					} else if (j == numberOfPointByZ - 2) {
+						checkPoint[3] = 0;
+						hk -= dk * p[n][i][j + 1];
+					}
+
+					if (i == 1) {
+						checkPoint[0] = 0;
+						hk -= ak * p[n][i - 1][j];
+					} else if (i == numberOfPointByX - 2) {
+						checkPoint[4] = 0;
+						hk -= ek * p[n][i + 1][j];
+					}
 
 
+					int currentPositionX = (i - 1) * numberOfVariablesOnX;
+					int currentPositionZ = (j - 1);
+					int currentPosition = currentPositionX + currentPositionZ;
+
+					matrix2[currentPosition] = hk;
 
 
+					matrix1[currentPosition][currentPosition] += ck;
+					if (j != 1)
+						matrix1[currentPosition][currentPosition - 1] += bk;
+					if (j != numberOfPointByZ - 2)
+						matrix1[currentPosition][currentPosition + 1] += dk;
+					if (i != 1)
+						matrix1[currentPosition][currentPosition - numberOfVariablesOnX] += ak;
+					if (i != numberOfPointByX - 2)
+						matrix1[currentPosition][currentPosition + numberOfVariablesOnX] += ek;
+				}
+			}
 
+			printArray(matrix1);
+
+			vector<double> pAnswer = SeidelMethod(matrix1, matrix2, 0.1);
+
+			for (int i = 1; i < numberOfPointByX - 1; i++) {
+				for (int j = 1; j < numberOfPointByZ - 1; j++) {
+					//int currentPositionX = (i - 1) * numberOfVariablesOnX;
+					//int currentPositionZ = (j - 1);
+					//int currentPosition = currentPositionX + currentPositionZ;
+
+					p[n][i][j] = pAnswer[(i - 1) * numberOfVariablesOnX + (j - 1)];
 				}
 			}
 
 
-			for (int i = 1; i < numberOfPointByX - 1; i++) { //saturation
+
+			//saturation
+			for (int i = 1; i < numberOfPointByX - 1; i++) { 
 				for (int j = 1; j < numberOfPointByZ - 1; j++) {
 					saturationW[n + 1][i][j] = saturationW[n][i][j] + omega(n, i, j) * stepByT;
 				}
