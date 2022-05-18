@@ -23,12 +23,12 @@ protected:
 public:
 	Impes() { //individual options //almost all options have to variation in [0, 1]. For example x, z, sigma, pressure and etc //grid will be 1x1x1
 		this->numberOfPointByT = 1e+1;
-		this->numberOfPointByX = 5;
-		this->numberOfPointByZ = 5;
+		this->numberOfPointByX = 10;
+		this->numberOfPointByZ = 10;
 
 		this->m = .24;
-		this->muo = 1.;
-		this->muw = 1.;
+		this->muo = 40.;
+		this->muw = 9.;
 
 		this->bw = 3.7e-10;
 		this->bo = 7.4e-9;
@@ -117,7 +117,7 @@ public:
 				}
 			}
 
-			printArray(matrix1);
+			//printArray(matrix1);
 
 			vector<double> pAnswer = SeidelMethod(matrix1, matrix2, 0.01);
 
@@ -142,8 +142,8 @@ public:
 			setKwAndKo(n + 1);
 		}
 
-		//printArray(saturationW);
-		printArray(p);
+		printArray(saturationW);
+		//printArray(p);
 	}
 
 	double omega(int n, int i, int j) { 
@@ -315,10 +315,10 @@ public:
 
 
 
-		this->pressureTEqual0 = [](double x, double z) {
+		this->pressureTEqual0 = [](double x, double z) { //must be added
 			return x + z;
 		};
-		this->saturationTEqual0 = [](double x, double z) {
+		this->saturationTEqual0 = [](double x, double z) { //must be added
 			return (x + z) / 3;
 		};
 		
@@ -337,17 +337,19 @@ public:
 
 		
 
-
+		//must be added
 		this->fa = [](double t, double z) { //let these functions set the boundary conditions for the pressure
 			return 1.;
 		};
 		this->fb = [](double t, double z) {
 			return 1.;
 		};
-		this->fc = [](double t, double x) {
+		this->fc = [](double t, double x) { 
+			//return 1.78e7;
 			return 1.;
 		};
 		this->fd = [](double t, double x) {
+			//return 0.5 * 1.78e7;
 			return 1.;
 		};
 
