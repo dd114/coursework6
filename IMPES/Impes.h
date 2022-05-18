@@ -52,7 +52,8 @@ public:
 			}
 		}
 
-		printArray(saturation);
+		//printArray(saturation);
+		printArray(p);
 	}
 
 	double omega(int n, int i, int j) { 
@@ -192,7 +193,7 @@ public:
 		
 
 
-		this->fa = [](double t, double z) {
+		this->fa = [](double t, double z) { //let these functions set the boundary conditions for the pressure
 			return 1.;
 		};
 		this->fb = [](double t, double z) {
@@ -204,6 +205,24 @@ public:
 		this->fd = [](double t, double x) {
 			return 1.;
 		};
+
+		
+		for (int n = 0; n < numberOfPointByT; n++) { //definition of pressure on boundaries
+			double t = stepByT * n;
+
+				for (int j = 0; j < numberOfPointByZ; j++) {
+					double z = stepByZ * j;
+					p[n][0][j] = fa(z, t);
+					p[n][numberOfPointByX - 1][j] = fb(z, t);
+				}
+
+				for (int i = 0; i < numberOfPointByX; i++) {
+					double x = stepByX * i;
+					p[n][i][0] = fc(x, t);
+					p[n][i][numberOfPointByZ - 1] = fd(x, t);
+				}
+			
+		}
 
 		this->alfa1 = [](double t, double x, double z) {
 			return 1.;
