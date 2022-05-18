@@ -35,6 +35,10 @@ public:
 		this->Bw = bw + bc;
 		this->Bo = bo + bc;
 
+		vector<vector<double>> matrix1 = { {1, 0, 0}, {0, 1, 0}, {0, 0, 1} };
+		vector<double> matrix2 = { 1, 2, 3 };
+
+		printArray(SeidelMethod(matrix1, matrix2, 0.1));
 
 
 
@@ -44,6 +48,12 @@ public:
 	}
 
 	void Calculate() {
+
+
+
+
+
+
 		for (int n = 0; n < numberOfPointByT - 1; n++) { //is defined without boundaries!!!
 			for (int i = 1; i < numberOfPointByX - 1; i++) {
 				for (int j = 1; j < numberOfPointByZ - 1; j++) {
@@ -130,6 +140,88 @@ public:
 				//k[n][i][j] = k0[n][i][j] * фазовая проницаемость(насыщенность) // must be filled
 			}
 		}
+	}
+
+	vector<double> SeidelMethod(const vector<vector<double>>& matrix1, const vector<double>& matrix2, double eps) {
+		// Считываем размер вводимой матрицы
+		int size = matrix1.size();
+
+		// Будем хранить матрицу в векторе, состоящем из 
+		// векторов вещественных чисел
+		vector <vector<double>> matrix = matrix1;
+
+		//// Матрица будет иметь размер (size) x (size + 1),
+		//// c учетом столбца свободных членов    
+		//matrix.resize(size);
+		//for (int i = 0; i < size; i++) {
+		//	matrix[i].resize(size + 1);
+
+		//	for (int j = 0; j < size + 1; j++) {
+		//		cin >> matrix[i][j];
+		//	}
+		//}
+
+
+		// Введем вектор значений неизвестных на предыдущей итерации,
+		// размер которого равен числу строк в матрице, т.е. size,
+		// причем согласно методу изначально заполняем его нулями
+		vector <double> previousVariableValues(size, 0.0);
+
+		// Будем выполнять итерационный процесс до тех пор, 
+		// пока не будет достигнута необходимая точность    
+		while (true) {
+			// Введем вектор значений неизвестных на текущем шаге       
+			vector <double> currentVariableValues(size);
+
+			// Посчитаем значения неизвестных на текущей итерации
+			// в соответствии с теоретическими формулами
+			for (int i = 0; i < size; i++) {
+				// Инициализируем i-ую неизвестную значением 
+				// свободного члена i-ой строки матрицы
+				currentVariableValues[i] = matrix2[i];
+
+				// Вычитаем сумму по всем отличным от i-ой неизвестным
+				for (int j = 0; j < size; j++) {
+					// При j < i можем использовать уже посчитанные
+					// на этой итерации значения неизвестных
+					if (j < i) {
+						currentVariableValues[i] -= matrix[i][j] * currentVariableValues[j];
+					}
+
+					// При j > i используем значения с прошлой итерации
+					if (j > i) {
+						currentVariableValues[i] -= matrix[i][j] * previousVariableValues[j];
+					}
+				}
+
+				// Делим на коэффициент при i-ой неизвестной
+				currentVariableValues[i] /= matrix[i][i];
+			}
+
+			// Посчитаем текущую погрешность относительно предыдущей итерации
+			double error = 0.0;
+
+			for (int i = 0; i < size; i++) {
+				error += abs(currentVariableValues[i] - previousVariableValues[i]);
+			}
+
+			// Если необходимая точность достигнута, то завершаем процесс
+			if (error < eps) {
+				break;
+			}
+
+			// Переходим к следующей итерации, так 
+			// что текущие значения неизвестных 
+			// становятся значениями на предыдущей итерации
+			previousVariableValues = currentVariableValues;
+		}
+
+		//// Выводим найденные значения неизвестных с 8 знаками точности
+		//for (int i = 0; i < size; i++) {
+		//	printf("%.8llf ", previousVariableValues[i]);
+		//}
+
+		return previousVariableValues;
 	}
 
 	vector<double> tridiagonalSolution(const vector<vector<double>>& matrix1, const vector<double>& matrix2) {
@@ -296,7 +388,7 @@ public:
 
 	template <typename T>
 	void printArray(const vector<T>& matrix1) {
-		cout << matrix1.size() << endl;
+		cout << matrix1.size() << "x1" << endl;
 		for (int i = 0; i < matrix1.size(); i++) {
 			cout << matrix1[i] << endl;
 		}
