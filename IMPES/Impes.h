@@ -134,7 +134,7 @@ public:
 				}
 			}
 
-			printArray(matrix1);
+			//printArray(matrix1);
 			cout << "LINE = " << __LINE__ << endl;
 
 			vector<double> pAnswer = SeidelMethod(matrix1, matrix2, 0.01);
@@ -164,7 +164,7 @@ public:
 		}
 
 		printArray(saturationW);
-		printArray(p);
+		//printArray(p);
 	}
 
 	double omega(int n, int i, int j) { 
@@ -437,9 +437,12 @@ public:
 				}
 			}
 
-			this->A = Lx * Lx * sigmaZ0 / (Lz * Lz * sigmaX0);
-			this->n_ = Lx * Lx / (p0 * sigmaX0);
-			cout << "coeffs have been added" << endl;
+			//this->A = Lx * Lx * sigmaZ0 / (Lz * Lz * sigmaX0);
+			//this->n_ = Lx * Lx / (p0 * sigmaX0);
+			//cout << "coeffs have been added" << endl;
+
+			this->A = 1;
+			this->n_ = 1;
 	}
 
 	vector<double> SeidelMethod(const vector<vector<double>>& matrix1, const vector<double>& matrix2, double eps) {
