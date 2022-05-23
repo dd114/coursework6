@@ -3,14 +3,16 @@
 #include <vector>
 #include <string>
 #include <cassert>
+#include <fstream>
 
 using namespace std;
 class Impes {
 protected:
 	int numberOfPointByT, numberOfPointByX, numberOfPointByZ;
 	double stepByT, stepByX, stepByZ;
-	double a, b, c, d;
+	double a, b, c, d, t;
 	double m, muw, muo, Bw, Bo, bw, bo, bc;
+	double Lx, Lz, p0, B0, sigmaX0, sigmaZ0, sigmaZW0, sigmaXW0, A, n_;
 	double (*pressureTEqual0)(double, double);
 	double (*saturationTEqual0)(double, double);
 
@@ -20,9 +22,14 @@ protected:
 
 	vector<vector<vector<double>>> saturationW, p, k0, kw, ko, phasePermeability, k;
 
+
+	string pointSchedule = "with points pointtype 5";
+	string lineSchedule = "with lines lw 3";
+	string path = "\"C:/Users/student/Desktop/albert/coursework6/IMPES";
+
 public:
 	Impes() { //individual options //almost all options have to variation in [0, 1]. For example x, z, sigma, pressure and etc //grid will be 1x1x1
-		this->numberOfPointByT = 1e+2;
+		this->numberOfPointByT = 45;
 		this->numberOfPointByX = 10;
 		this->numberOfPointByZ = 10;
 
@@ -36,6 +43,16 @@ public:
 		this->Bw = bw + bc;
 		this->Bo = bo + bc;
 
+		this->a = 0;
+		this->c = 0;
+		this->b = 100;
+		this->d = 10;
+		this->t = 1;
+
+		this->Lx = 200;
+		this->Lz = 10;
+
+		
 
 
 	
@@ -71,15 +88,15 @@ public:
 
 					vector<double> checkPoint(5, 0);
 					double ak = D(n, i - 1, j) * stepByT / (stepByX * stepByX) * meanSigmaXIN;
-					double bk = D(n, i, j - 1) * stepByT / (stepByZ * stepByZ) * meanSigmaZJN;
+					double bk = A * D(n, i, j - 1) * stepByT / (stepByZ * stepByZ) * meanSigmaZJN;
 
 					double ck = D(n, i, j) * stepByT / (stepByX * stepByX) * (meanSigmaXIP + meanSigmaXIN) + 
-								D(n, i, j) * stepByT / (stepByZ * stepByZ) * (meanSigmaZJP + meanSigmaZJN) + 1;
+								D(n, i, j) * stepByT / (stepByZ * stepByZ) * A * (meanSigmaZJP + meanSigmaZJN) + 1;
 
-					double dk = D(n, i, j + 1) * stepByT / (stepByZ * stepByZ) * meanSigmaZJP;
+					double dk = A * D(n, i, j + 1) * stepByT / (stepByZ * stepByZ) * meanSigmaZJP;
 					double ek = D(n, i + 1, j) * stepByT / (stepByX * stepByX) * meanSigmaXIP;
 
-					double hk = N(n, i, j) * D(n, i, j) * stepByT - p[n][i][j];
+					double hk = n_ * N(n, i, j) * D(n, i, j) * stepByT - p[n][i][j];
 
 					if (j == 1) {
 						checkPoint[1] = 0;
@@ -117,9 +134,13 @@ public:
 				}
 			}
 
-			//printArray(matrix1);
+			printArray(matrix1);
+			cout << "LINE = " << __LINE__ << endl;
 
 			vector<double> pAnswer = SeidelMethod(matrix1, matrix2, 0.01);
+
+			//printArray(pAnswer);
+			cout << "n = " << n << endl;
 
 			for (int i = 1; i < numberOfPointByX - 1; i++) {
 				for (int j = 1; j < numberOfPointByZ - 1; j++) {
@@ -143,7 +164,7 @@ public:
 		}
 
 		printArray(saturationW);
-		//printArray(p);
+		printArray(p);
 	}
 
 	double omega(int n, int i, int j) { 
@@ -164,10 +185,10 @@ public:
 		double meanSigmaZJP = (sigmaZ(n, i, j, "w") + sigmaZ(n, i, j + 1, "w")) / 2.;
 		double meanSigmaZJN = (sigmaZ(n, i, j - 1, "w") + sigmaZ(n, i, j, "w")) / 2.;
 
-		double answer = 1. / m * (
+		double answer = B0 * p0 / m * (
 			1. / (stepByX * stepByX) * (meanSigmaXIP * p[n + 1][i + 1][j] - (meanSigmaXIP + meanSigmaXIN) * p[n + 1][i][j] + meanSigmaXIN * p[n + 1][i - 1][j]) +
-			1. / (stepByZ * stepByZ) * (meanSigmaZJP * p[n + 1][i][j + 1] - (meanSigmaZJP + meanSigmaZJN) * p[n + 1][i][j] + meanSigmaZJN * p[n + 1][i][j - 1]) -
-			N(n, i, j, "w") - B(n, i, j, "w") * saturationW[n][i][j] * (p[n + 1][i][j] - p[n][i][j]) / stepByT
+			1. / (stepByZ * stepByZ) * A * (meanSigmaZJP * p[n + 1][i][j + 1] - (meanSigmaZJP + meanSigmaZJN) * p[n + 1][i][j] + meanSigmaZJN * p[n + 1][i][j - 1]) -
+			n_ * N(n, i, j, "w") - m * B(n, i, j, "w") * saturationW[n][i][j] * (p[n + 1][i][j] - p[n][i][j]) / stepByT
 			);
 
 		return answer;
@@ -298,28 +319,47 @@ public:
 		}
 	}
 
+	void printSaturationWPermeabilityW() {
+		int layer = 2;
+		vector<double> first((numberOfPointByZ - 2) * (numberOfPointByX - 2));
+		vector<double> second((numberOfPointByZ - 2) * (numberOfPointByX - 2));
+
+		for (int i = 1; i < numberOfPointByX - 1; i++) {
+			for (int j = 1; j < numberOfPointByZ - 1; j++) {
+				int currentPositionX = (i - 1) * (numberOfPointByZ - 2);
+				int currentPositionZ = (j - 1);
+				int currentPosition = currentPositionX + currentPositionZ;
+				first[currentPosition] = saturationW[layer][i][j];
+				second[currentPosition] = kw[layer][i][j];
+
+			}
+		}
+		makeFileForGraph(first, second, "printSaturationWPermeabilityW.txt");
+		drawGraph("printSaturationWPermeabilityW.txt", "graph");
+		//printArray(first);
+	}
 
 	void setInitialBoundaryConditions() {
-		this->stepByT = 1. / (numberOfPointByT - 1.);
-		this->stepByX = 1. / (numberOfPointByX - 1.);
-		this->stepByZ = 1. / (numberOfPointByZ - 1.);
+		this->stepByT = 1 / (numberOfPointByT - 1.);
+		this->stepByX = (b - a) / (numberOfPointByX - 1.);
+		this->stepByZ = (d - c) / (numberOfPointByZ - 1.);
 
 		this->saturationW = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
 		this->p = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
 
-		this->k0 = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ, 1e-6)));
+		this->k0 = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ, 1e-12)));
 		this->kw = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
 		this->ko = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
 		this->k = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
 		//this->phasePermeability = vector<vector<vector<double>>>(numberOfPointByT, vector<vector<double>>(numberOfPointByX, vector<double>(numberOfPointByZ)));
 
-
+		//this->X0 = k0[0][0][0] / mu;
 
 		this->pressureTEqual0 = [](double x, double z) { //must be added
-			return x + z;
+			return 2e+6;
 		};
 		this->saturationTEqual0 = [](double x, double z) { //must be added
-			return (x + z) / 3;
+			return 0.4;
 		};
 		
 
@@ -339,22 +379,22 @@ public:
 
 		//must be added
 		this->fa = [](double t, double z) { //let these functions set the boundary conditions for the pressure
-			return 1.;
+			return 0.;
 		};
 		this->fb = [](double t, double z) {
-			return 1.;
+			return 0.;
 		};
 		this->fc = [](double t, double x) { 
-			//return 1.78e7;
-			return 1.;
+			return 1.78e7;
+			//return 1.;
 		};
 		this->fd = [](double t, double x) {
-			//return 0.5 * 1.78e7;
-			return 1.;
+			return 0.5 * 1.78e7;
+			//return 1.;
 		};
 
 		
-		for (int n = 0; n < numberOfPointByT; n++) { //definition of pressure on boundaries
+		for (int n = 0; n < numberOfPointByT; n++) { //definition of pressure and saturation on boundaries
 			double t = stepByT * n;
 
 				for (int j = 0; j < numberOfPointByZ; j++) {
@@ -367,37 +407,39 @@ public:
 					double x = stepByX * i;
 					p[n][i][0] = fc(x, t);
 					p[n][i][numberOfPointByZ - 1] = fd(x, t);
+
+					saturationW[n][i][0] = 1.;
+					//saturationW[n][i][numberOfPointByZ - 1] = 0.4;
 				}
 			
 		}
 
-		this->alfa1 = [](double t, double x, double z) {
-			return 1.;
-		};
-		this->alfa2 = [](double t, double x, double z) {
-			return 1.;
-		};
-		this->alfa3 = [](double t, double x, double z) {
-			return 1.;
-		};
-		this->alfa4 = [](double t, double x, double z) {
-			return 1.;
-		};
+		this->sigmaX0 = 0;
+		this->sigmaXW0 = 0;
 
-		this->beta1 = [](double t, double x, double z) {
-			return 1.;
-		};
-		this->beta2 = [](double t, double x, double z) {
-			return 1.;
-		};
-		this->beta3 = [](double t, double x, double z) {
-			return 1.;
-		};
-		this->beta4 = [](double t, double x, double z) {
-			return 1.;
-		};
+		this->sigmaZ0 = 0;
+		this->sigmaZW0 = 0;
+
+		this->p0 = 0;
+		this->B0 = 0;
 
 
+			for (int i = 0; i < numberOfPointByX; i++) {
+				for (int j = 0; j < numberOfPointByZ; j++) {
+					if (B(0, i, j) > B0)
+						B0 = B(0, i, j);
+					if (sigmaX(0, i, j) > sigmaX0)
+						sigmaX0 = sigmaX(0, i, j);
+					if (sigmaZ(0, i, j) > sigmaZ0)
+						sigmaZ0 = sigmaZ(0, i, j);
+					if (p[0][i][j] > p0)
+						p0 = p[0][i][j];
+				}
+			}
+
+			this->A = Lx * Lx * sigmaZ0 / (Lz * Lz * sigmaX0);
+			this->n_ = Lx * Lx / (p0 * sigmaX0);
+			cout << "coeffs have been added" << endl;
 	}
 
 	vector<double> SeidelMethod(const vector<vector<double>>& matrix1, const vector<double>& matrix2, double eps) {
@@ -463,6 +505,37 @@ public:
 		}
 
 		return previousVariableValues;
+	}
+
+	void drawGraph(string name, string text) {
+		string str;
+		str = path + name + "\" using 1:2 title \"" + text + "\" " + pointSchedule + ";";
+		std::ofstream graphic("file");
+		cout << str << endl;
+		//graphic << "plot " << str << "; pause mouse keypress" << "\n";
+		graphic << "set border 3" << endl;
+		graphic << "plot " << str << endl;
+		graphic.close();
+		system("gnuplot -persist file");
+
+		graphic.close();
+	}
+
+	template <typename T, typename K>
+	void makeFileForGraph(const vector<T>& first, const vector<K>& second, const string fileName) {
+		//cout << "file" << endl;
+
+		ofstream file(fileName);
+
+		assert(first.size() == second.size() && "Size mismatch");
+
+		for (int i = 0; i < first.size(); i++) {
+			//cout << "file = " << i << endl;
+
+			file << first[i] << " " << second[i] << endl;
+		}
+
+
 	}
 
 	virtual void setNumberOfPointByT(int numberOfPointByT) {
