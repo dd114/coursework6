@@ -7,6 +7,7 @@
 
 using namespace std;
 class Impes {
+
 protected:
 	int numberOfPointByT, numberOfPointByX, numberOfPointByZ;
 	double stepByT, stepByX, stepByZ;
@@ -29,7 +30,7 @@ protected:
 
 public:
 	Impes() { //individual options //almost all options have to variation in [0, 1]. For example x, z, sigma, pressure and etc //grid will be 1x1x1
-		this->numberOfPointByT = 45;
+		this->numberOfPointByT = 30;
 		this->numberOfPointByX = 10;
 		this->numberOfPointByZ = 10;
 
@@ -190,7 +191,7 @@ public:
 			1. / (stepByZ * stepByZ) * A * (meanSigmaZJP * p[n + 1][i][j + 1] - (meanSigmaZJP + meanSigmaZJN) * p[n + 1][i][j] + meanSigmaZJN * p[n + 1][i][j - 1]) -
 			n_ * N(n, i, j, "w") - m * B(n, i, j, "w") * saturationW[n][i][j] * (p[n + 1][i][j] - p[n][i][j]) / stepByT
 			);
-
+		cout << answer << endl;
 		return answer;
 	}
 
@@ -356,7 +357,7 @@ public:
 		//this->X0 = k0[0][0][0] / mu;
 
 		this->pressureTEqual0 = [](double x, double z) { //must be added
-			return 2e+6;
+			return 0.7 * 1.78e+7;
 		};
 		this->saturationTEqual0 = [](double x, double z) { //must be added
 			return 0.4;
@@ -379,22 +380,22 @@ public:
 
 		//must be added
 		this->fa = [](double t, double z) { //let these functions set the boundary conditions for the pressure
-			return 0.;
+			return 0.7 * 1.78e+7;
 		};
 		this->fb = [](double t, double z) {
-			return 0.;
+			return 0.7 * 1.78e+7;
 		};
 		this->fc = [](double t, double x) { 
-			return 1.78e7;
+			return 1.78e+7;
 			//return 1.;
 		};
 		this->fd = [](double t, double x) {
-			return 0.5 * 1.78e7;
+			return 0.5 * 1.78e+7;
 			//return 1.;
 		};
 
 		
-		for (int n = 0; n < numberOfPointByT; n++) { //definition of pressure and saturation on boundaries
+		for (int n = 1; n < numberOfPointByT; n++) { //definition of pressure and saturation on boundaries
 			double t = stepByT * n;
 
 				for (int j = 0; j < numberOfPointByZ; j++) {
