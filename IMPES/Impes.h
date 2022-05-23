@@ -30,7 +30,7 @@ protected:
 
 public:
 	Impes() { //individual options //almost all options have to variation in [0, 1]. For example x, z, sigma, pressure and etc //grid will be 1x1x1
-		this->numberOfPointByT = 30;
+		this->numberOfPointByT = 70;
 		this->numberOfPointByX = 10;
 		this->numberOfPointByZ = 10;
 
@@ -186,12 +186,20 @@ public:
 		double meanSigmaZJP = (sigmaZ(n, i, j, "w") + sigmaZ(n, i, j + 1, "w")) / 2.;
 		double meanSigmaZJN = (sigmaZ(n, i, j - 1, "w") + sigmaZ(n, i, j, "w")) / 2.;
 
+		double E1 = (meanSigmaXIP * p[n + 1][i + 1][j] - (meanSigmaXIP + meanSigmaXIN) * p[n + 1][i][j] + meanSigmaXIN * p[n + 1][i - 1][j]);
+		double E2 = (meanSigmaZJP * p[n + 1][i][j + 1] - (meanSigmaZJP + meanSigmaZJN) * p[n + 1][i][j] + meanSigmaZJN * p[n + 1][i][j - 1]);
+		double diffPressure = (p[n + 1][i][j] - p[n][i][j]);
+
+		double valueB = -m * B(n, i, j, "w") * saturationW[n][i][j] * diffPressure / stepByT;
+		double valueN = N(n, i, j, "w");
+
 		double answer = B0 * p0 / m * (
-			1. / (stepByX * stepByX) * (meanSigmaXIP * p[n + 1][i + 1][j] - (meanSigmaXIP + meanSigmaXIN) * p[n + 1][i][j] + meanSigmaXIN * p[n + 1][i - 1][j]) +
-			1. / (stepByZ * stepByZ) * A * (meanSigmaZJP * p[n + 1][i][j + 1] - (meanSigmaZJP + meanSigmaZJN) * p[n + 1][i][j] + meanSigmaZJN * p[n + 1][i][j - 1]) -
-			n_ * N(n, i, j, "w") - m * B(n, i, j, "w") * saturationW[n][i][j] * (p[n + 1][i][j] - p[n][i][j]) / stepByT
+			1. / (stepByX * stepByX) * E1 +
+			1. / (stepByZ * stepByZ) * A * E2 -
+			n_ * N(n, i, j, "w") - m * B(n, i, j, "w") * saturationW[n][i][j] * diffPressure / stepByT
 			);
-		cout << answer << endl;
+
+		//cout << answer << endl;
 		return answer;
 	}
 
@@ -235,16 +243,19 @@ public:
 	}
 
 	double N(int n, int i, int j, string phase = "general") {
+		double coeff = 1;
 		double t = stepByT * n;
 		double x = stepByX * i;
 		double z = stepByZ * j;
 
 		if (phase == "w") {
-			return 1.;
-		} else if (phase == "o") {
-			return 1.;
-		} else if (phase == "general") {
-			return 1. + 1.;
+			return -(coeff);
+		}
+		else if (phase == "o") {
+			return -(coeff);
+		}
+		else if (phase == "general") {
+			return -(coeff + coeff);
 		} else {
 			cerr << "PHASE ERROR" << endl;
 			throw "PHASE ERROR";
