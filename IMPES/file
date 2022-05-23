@@ -1,2 +1,2 @@
 set border 3
-plot "C:/Users/student/Desktop/albert/coursework6/IMPESprintSaturationWPermeabilityW.txt" using 1:2 title "graph" with points pointtype 5;
+plot "C:/Users/student/Desktop/albert/coursework6/IMPESprintSaturationWChangesOverTime.txt" using 1:2 title "graph" with points pointtype 5;

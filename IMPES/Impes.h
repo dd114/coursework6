@@ -30,7 +30,7 @@ protected:
 
 public:
 	Impes() { //individual options //almost all options have to variation in [0, 1]. For example x, z, sigma, pressure and etc //grid will be 1x1x1
-		this->numberOfPointByT = 70;
+		this->numberOfPointByT = 100;
 		this->numberOfPointByX = 10;
 		this->numberOfPointByZ = 10;
 
@@ -243,7 +243,7 @@ public:
 	}
 
 	double N(int n, int i, int j, string phase = "general") {
-		double coeff = 1;
+		double coeff = 1.5;
 		double t = stepByT * n;
 		double x = stepByX * i;
 		double z = stepByZ * j;
@@ -332,22 +332,16 @@ public:
 	}
 
 	void printSaturationWPermeabilityW() {
-		int layer = 2;
-		vector<double> first((numberOfPointByZ - 2) * (numberOfPointByX - 2));
-		vector<double> second((numberOfPointByZ - 2) * (numberOfPointByX - 2));
+		int layerOfZ = numberOfPointByZ - 2;
+		vector<double> first(numberOfPointByT);
+		vector<double> second(numberOfPointByT);
 
-		for (int i = 1; i < numberOfPointByX - 1; i++) {
-			for (int j = 1; j < numberOfPointByZ - 1; j++) {
-				int currentPositionX = (i - 1) * (numberOfPointByZ - 2);
-				int currentPositionZ = (j - 1);
-				int currentPosition = currentPositionX + currentPositionZ;
-				first[currentPosition] = saturationW[layer][i][j];
-				second[currentPosition] = kw[layer][i][j];
-
-			}
+		for (int i = 0; i < numberOfPointByT; i++) {
+			first[i] = i;
+			second[i] = saturationW[i][numberOfPointByX - 2][layerOfZ];
 		}
-		makeFileForGraph(first, second, "printSaturationWPermeabilityW.txt");
-		drawGraph("printSaturationWPermeabilityW.txt", "graph");
+		makeFileForGraph(first, second, "printSaturationWChangesOverTime.txt");
+		drawGraph("printSaturationWChangesOverTime.txt", "graph");
 		//printArray(first);
 	}
 
